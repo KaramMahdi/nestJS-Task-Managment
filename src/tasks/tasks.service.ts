@@ -1,61 +1,71 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Task, TaskStatus } from './task.model';
-import * as uuid from 'uuid';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CreateTaskDTO } from './dto/tasks.create.dto';
 import { FilterTasksDTO } from './dto/tasks.filter.dto';
+import { Task } from './tasks.entity';
+import { TaskRepository } from './tasks.repository';
+import { TaskStatus } from './tasks.status.enum';
+
 
 @Injectable()
 export class TasksService {
-    private tasks:Task[]=[];
-    getAllTasks():Task[]{
-        return this.tasks;
+    constructor(
+        @InjectRepository(TaskRepository)
+        private taskRepository: TaskRepository
+    ) { }
+
+    async getTasks(filterTasksDTO: FilterTasksDTO): Promise<Task[]> {
+        return await this.taskRepository.getTasks(filterTasksDTO);
     }
-    getTasksWithFilters(filterDTO:FilterTasksDTO):Task[]{
-        const {search,status} =filterDTO;
-        let tasks=this.getAllTasks();
-        if(status)
-        {
-            tasks=tasks.filter(task=>task.status===status)
-        }
-        if(search)
-        {
-            tasks=tasks.filter(task=>
-                task.title.includes(search)||
-                task.description.includes(search)
-            );
-        }
-        return tasks;
-    }
-    getTaskById(id:string):Task
+
+    /////////-////
+
+   // private tasks: Task[] = [];
+    //getAllTasks():Task[]{
+    //    return this.tasks;
+    //}
+    //getTasksWithFilters(filterDTO:FilterTasksDTO):Task[]{
+    //    const {search,status} =filterDTO;
+    //    let tasks=this.getAllTasks();
+    //    if(status)
+    //    {
+    //        tasks=tasks.filter(task=>task.status===status)
+    //    }
+    //    if(search)
+    //    {
+    //        tasks=tasks.filter(task=>
+    //            task.title.includes(search)||
+    //            task.description.includes(search)
+    //        );
+    //    }
+    //    return tasks;
+    //}
+
+    async getTaskById(id: number): Promise<Task>
     {
-        const found=this.tasks.find(task=>task.id===id);
+        const found = await this.taskRepository.findOne(id);
         if(!found)
         {
           throw new NotFoundException(`Task with ID ${id} not found`); 
         }
         return found;
     }
-    deleteTask(id:string):void
-    {
-        const found =this.getTaskById(id);
-        this.tasks= this.tasks.filter(task=>task.id !==id);
+    async   createTask(createTaskDTO: CreateTaskDTO): Promise<Task> {
+         return await this.taskRepository.createTask(createTaskDTO);
     }
-    createTask(createTaskDTO:CreateTaskDTO):Task {
-        const {title,description} = createTaskDTO;
-        const task: Task = {
-        id: uuid.v1(),
-        title,
-        description,
-        status: TaskStatus.OPEN,
-        };
-        this.tasks.push(task);
-        return task; 
+    async deleteTask(id: number): Promise<void>
+    {
+        const result = await this.taskRepository.delete(id);
+        if (result.affected === 0) {
+            throw new NotFoundException(`Task with ID ${id} not found`);
         }
-
-        updateTaskStatus(id:string,status:TaskStatus):Task
-        {
-        const task=this.getTaskById(id);
-        task.status=status;
-        return task;
-        }
+    }
+    async updateTaskStatus(id: number, status: TaskStatus): Promise<Task> {
+        console.log(id)
+        console.log(status)
+        const taskFound = await this.getTaskById(id)
+        taskFound.status = status
+        await taskFound.save()
+        return taskFound
+    }
 }
