@@ -1,12 +1,12 @@
 {
   "ExpandedNodes": [
     "",
+    "\\config",
     "\\src",
-    "\\src\\config",
-    "\\src\\tasks",
+    "\\src\\auth",
+    "\\src\\auth\\dto",
     "\\src\\tasks\\dto",
     "\\src\\tasks\\pipes"
   ],
-  "SelectedNode": "\\src\\config\\typeorm.config.ts",
   "PreviewInSolutionExplorer": false
 }
